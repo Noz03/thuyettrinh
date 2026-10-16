@@ -12,12 +12,6 @@
 
 ### Slide 1. Giới thiệu sản phẩm
 
-**Nội dung trên slide:**
-- Tên sản phẩm: AI-Grading-IoT
-- Thông điệp: *Ứng dụng trí tuệ nhân tạo vào đánh giá bài thực hành IoT*
-- Hình ảnh giao diện hệ thống và bộ kit thực hành IoT
-
-**Lời thuyết trình:**
 
 Kính chào quý thầy cô và các bạn.
 
@@ -33,13 +27,6 @@ Trong phần trình bày hôm nay, em sẽ giới thiệu bài toán mà sản p
 
 ### Slide 2. Đặt vấn đề
 
-**Nội dung trên slide:**
-- Việc chấm bài thực hành IoT cần kiểm tra nhiều thành phần.
-- Chấm thủ công tốn thời gian.
-- Khó bảo đảm sự thống nhất giữa các lần đánh giá.
-- Thiếu công cụ đánh giá kết hợp mã nguồn và phần cứng.
-
-**Lời thuyết trình:**
 
 Để hiểu rõ hơn về vấn đề, chúng ta có thể xem xét một bài thực hành IoT đơn giản: sinh viên sử dụng vi điều khiển ESP32 để đọc dữ liệu từ cảm biến và hiển thị thông tin ra Serial Monitor.
 
@@ -61,14 +48,6 @@ Một số công cụ có thể hỗ trợ kiểm tra mã nguồn, nhưng chưa 
 
 ### Slide 3. Phương án giải quyết
 
-**Nội dung trên slide:**
-- Một nền tảng web quản lý toàn bộ quy trình thực hành.
-- AI hỗ trợ xây dựng tiêu chí đánh giá.
-- AI hỗ trợ phân tích mã nguồn.
-- Computer Vision nhận diện linh kiện trong hình ảnh.
-- Kết quả đánh giá có điểm số và nhận xét.
-
-**Lời thuyết trình:**
 
 Từ những vấn đề vừa nêu, nhóm đề xuất xây dựng một nền tảng có khả năng kết hợp quản lý bài thực hành và đánh giá tự động bằng trí tuệ nhân tạo.
 
@@ -94,14 +73,6 @@ Với định hướng này, AI-Grading-IoT hướng đến một quy trình ch�
 
 ### Slide 4. Hướng triển khai sản phẩm
 
-**Nội dung trên slide:**
-- Xây dựng nền tảng quản lý bài thực hành.
-- Phát triển AI Code Grader.
-- Xây dựng dataset linh kiện IoT.
-- Fine-tuning mô hình YOLO11.
-- Tích hợp và hoàn thiện Vision Grader.
-
-**Lời thuyết trình:**
 
 Để hiện thực hóa giải pháp, nhóm lựa chọn cách triển khai theo từng giai đoạn, ưu tiên xây dựng một sản phẩm MVP, hay Minimum Viable Product, trước khi mở rộng các tính năng nâng cao.
 
@@ -119,19 +90,6 @@ Cách tiếp cận này giúp nhóm kiểm thử từng thành phần tương đ
 
 ### Slide 5. Công nghệ sử dụng
 
-**Nội dung trên slide:**
-
-| Thành phần | Công nghệ |
-|---|---|
-| Frontend | React |
-| Backend | Python, FastAPI |
-| API và Validation | REST API, Pydantic |
-| AI Code Grading | LLM thông qua Groq API |
-| Object Detection | YOLO11, Ultralytics |
-| Vision Reasoning | Qwen3-VL (định hướng tích hợp) |
-| Testing | Pytest, Swagger UI |
-
-**Lời thuyết trình:**
 
 Về mặt công nghệ, hệ thống sử dụng React để xây dựng giao diện web, giúp tạo ra trải nghiệm tương tác phù hợp với cả giảng viên và sinh viên.
 
@@ -151,17 +109,7 @@ Như vậy, sản phẩm kết hợp hai hướng AI: **LLM để phân tích v�
 
 ### Slide 6. Kiến trúc tổng thể hệ thống
 
-**Nội dung trên slide:**
 
-Sơ đồ kiến trúc gồm các tầng:
-
-1. Presentation Layer – React Web Application.
-2. API Layer – FastAPI.
-3. Business Logic – Practice, Rubric, Submission, Grading Services.
-4. AI Layer – Groq LLM và Vision Pipeline.
-5. Data Layer – Database và lưu trữ bài nộp.
-
-**Lời thuyết trình:**
 
 Về kiến trúc, AI-Grading-IoT được thiết kế theo hướng phân chia hệ thống thành các tầng chức năng.
 
@@ -187,16 +135,6 @@ Cuối cùng là Data Layer, phụ trách lưu trữ thông tin người dùng, 
 
 ### Slide 7. Tổng quan các tính năng
 
-**Nội dung trên slide:**
-- Quản lý người dùng theo vai trò.
-- Quản lý khóa học và bài thực hành.
-- Xây dựng và chỉnh sửa rubric.
-- Nộp bài thực hành.
-- AI đánh giá mã nguồn.
-- Quản lý và hiển thị kết quả.
-- Nhận diện linh kiện IoT bằng AI.
-
-**Lời thuyết trình:**
 
 Từ kiến trúc vừa trình bày, nhóm đã tổ chức sản phẩm thành các nhóm chức năng chính, tương ứng với quy trình sử dụng thực tế.
 
@@ -214,11 +152,6 @@ Sau đây, em xin trình bày cụ thể hơn về luồng sử dụng của gi�
 
 ### Slide 8. Luồng chức năng dành cho giảng viên
 
-**Nội dung trên slide:**
-
-Đăng nhập → Chọn khóa học → Tạo Practice → AI đề xuất Rubric → Giảng viên kiểm tra → Công bố bài thực hành.
-
-**Lời thuyết trình:**
 
 Đối với giảng viên, quy trình bắt đầu bằng việc tạo một bài thực hành mới.
 
@@ -238,11 +171,6 @@ Tính năng này hướng đến việc giảm thời gian xây dựng rubric t�
 
 ### Slide 9. Luồng chức năng dành cho sinh viên
 
-**Nội dung trên slide:**
-
-Đăng nhập → Chọn Practice → Xem yêu cầu → Nộp mã nguồn và hình ảnh → AI Grading → Xem kết quả.
-
-**Lời thuyết trình:**
 
 Đối với sinh viên, quy trình sử dụng được thiết kế tương đối đơn giản.
 
@@ -262,11 +190,6 @@ Trong phiên bản MVP, chức năng chấm lần đầu được giới hạn t
 
 ### Slide 10. Luồng AI Code Grading
 
-**Nội dung trên slide:**
-
-Practice + Code Rubric + Student Code → Prompt Builder → Groq LLM API → Validate Response → Grading Result.
-
-**Lời thuyết trình:**
 
 Một trong những tính năng trọng tâm của sản phẩm là AI Code Grading.
 
@@ -294,11 +217,6 @@ Tuy nhiên, việc phân tích mã nguồn bằng LLM không đồng nghĩa vớ
 
 ### Slide 11. Luồng AI Vision Grading
 
-**Nội dung trên slide:**
-
-Hình ảnh bộ kit → Tiền xử lý → YOLO11 → Danh sách linh kiện → Qwen3-VL → Đối chiếu Vision Rubric → Kết quả.
-
-**Lời thuyết trình:**
 
 Bên cạnh mã nguồn, một bài thực hành IoT còn có thành phần rất quan trọng là phần cứng.
 
@@ -330,14 +248,6 @@ Chẳng hạn, nếu bài yêu cầu sử dụng Arduino, LCD và cảm biến n
 
 ### Slide 12. Xây dựng Dataset IoT
 
-**Nội dung trên slide:**
-- Thu thập hình ảnh bộ kit thực hành.
-- Xác định các class linh kiện.
-- Gán nhãn Bounding Box.
-- Tổ chức tập dữ liệu theo định dạng YOLO.
-- Phân chia dữ liệu để huấn luyện và đánh giá.
-
-**Lời thuyết trình:**
 
 Để có thể nhận diện các linh kiện trong bộ kit của dự án, nhóm cần một mô hình được huấn luyện phù hợp với dữ liệu thực tế.
 
@@ -361,11 +271,6 @@ Sau khi hoàn thành, dữ liệu được tổ chức theo định dạng YOLO 
 
 ### Slide 13. Fine-tuning mô hình YOLO11
 
-**Nội dung trên slide:**
-
-Pretrained YOLO11 → Custom IoT Dataset → Training → Validation → `best.pt` → Inference.
-
-**Lời thuyết trình:**
 
 Sau khi xây dựng dataset, nhóm tiếp tục tiến hành fine-tuning mô hình YOLO11.
 
@@ -391,14 +296,6 @@ Kết quả đầu ra bao gồm tên class, tọa độ bounding box và confide
 
 ### Slide 14. Kết quả thử nghiệm YOLO11
 
-**Nội dung trên slide:**
-- Hình ảnh đầu vào.
-- Hình ảnh sau khi thực hiện Object Detection.
-- Bounding Box và Class Name.
-- Confidence Score.
-- Các trường hợp mô hình nhận diện chưa tốt.
-
-**Lời thuyết trình:**
 
 Sau khi fine-tuning, nhóm thực hiện inference để kiểm tra khả năng nhận diện của mô hình trên những hình ảnh bộ kit.
 
