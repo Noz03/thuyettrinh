@@ -294,96 +294,59 @@ Kết quả đầu ra bao gồm tên class, tọa độ bounding box và confide
 
 Đây chính là thành phần AI nhận diện linh kiện mà nhóm dự kiến tích hợp trực tiếp vào hệ thống Vision Grading.
 
-#### Phần bổ sung giữa Slide 13 và Slide 14 – Giải thích quá trình fine-tuning, định nghĩa các chỉ số và đọc kết quả YOLO11
+#### Kịch bản giới thiệu notebook huấn luyện YOLO11 – Chuyển tiếp từ Slide 13 sang Slide 14
 
-*Vị trí trình bày: sau lời nói ở Slide 13 và trước Slide 14. Đoạn dưới đây được viết để có thể đọc trực tiếp khi thuyết trình. Các con số về cấu hình, dữ liệu và kết quả đánh giá lấy từ notebook `notebook399d3887ca.ipynb`; ví dụ tính toán dùng để giải thích khái niệm, không phải số đo của mô hình.*
+*Thời lượng gợi ý: khoảng 4 phút. Đây là phần **lời nói trực tiếp** khi mở notebook, không phải phần học thuộc định nghĩa. Các chỉ số được trích từ `notebook399d3887ca.ipynb`.*
 
-**1. Mục tiêu của bài toán và dữ liệu đầu vào**
+**[Mở notebook – giới thiệu quy trình]**
 
-Trước khi xem kết quả, em xin giải thích cụ thể mô hình YOLO11 đã được huấn luyện như thế nào và các chỉ số ở biểu đồ có ý nghĩa gì.
+Tiếp theo, em xin giới thiệu cụ thể quá trình nhóm đã fine-tune mô hình YOLO11, thông qua notebook huấn luyện được thực hiện trên môi trường Kaggle.
 
-Bài toán nhóm giải quyết là **Object Detection**, hay *phát hiện đối tượng trong ảnh*. Một mô hình Object Detection không chỉ dự đoán tên linh kiện mà còn tìm vị trí linh kiện đó. Chẳng hạn, với một ảnh có Arduino, LCD và cảm biến nhiệt độ, đầu ra mong muốn là ba **class**, tức *nhãn loại linh kiện*, cùng ba **bounding box**, tức *khung chữ nhật bao quanh vùng chứa linh kiện*. Vị trí này được biểu diễn bằng tọa độ để máy tính có thể vẽ và xử lý tiếp.
+Mục tiêu của nhóm là xây dựng một mô hình có thể phát hiện các linh kiện trên bộ kit IoT, thay vì chỉ nhận diện những đối tượng phổ biến trong các bộ dữ liệu có sẵn. Toàn bộ quy trình được triển khai theo các bước: chuẩn bị dữ liệu, lựa chọn mô hình nền, huấn luyện, theo dõi kết quả và xuất mô hình để sử dụng trong hệ thống.
 
-Để dạy mô hình, nhóm dùng **dataset**, nghĩa là tập dữ liệu phục vụ huấn luyện, gồm ảnh và **annotation**. Annotation là thông tin do người gán nhãn cung cấp, cho biết một linh kiện thuộc class nào và khung bao của nó nằm ở đâu. Trong notebook, dataset được lấy từ Roboflow, phiên bản 2 của dự án AI-Grading-IoT, ở định dạng `yolov8` tương thích với thư viện Ultralytics và có **33 class**. Số class là số *loại linh kiện cần phân biệt*, không phải số linh kiện xuất hiện trong một ảnh.
+**[Cell 1 – Cài đặt thư viện]**
 
-Dữ liệu được chia thành **tập train**, tức nhóm ảnh mô hình dùng để học và cập nhật tham số, và **tập validation**, tức nhóm ảnh tách ra để kiểm tra chất lượng trong quá trình huấn luyện. Nhật ký ghi **1.173 ảnh train** và **112 ảnh validation với 841 instance**. *Instance* là một đối tượng được gán nhãn cụ thể; ví dụ, một ảnh có 1 Arduino và 2 nút bấm thì có 3 instance. Vì thế, 112 ảnh có thể chứa 841 đối tượng. Notebook chưa trình bày kết quả đánh giá trên một **tập test độc lập**, tức tập chỉ dùng để kiểm tra cuối cùng, không dùng trong lựa chọn mô hình.
+Đầu tiên, nhóm cài đặt hai thư viện chính là **Ultralytics** và **Roboflow**. Ultralytics được sử dụng để huấn luyện và đánh giá YOLO11; Roboflow hỗ trợ quản lý và tải bộ dữ liệu ảnh linh kiện IoT đã được gán nhãn.
 
-**2. Vì sao dùng YOLO11n và fine-tuning?**
+**[Cell 2 – Tải dataset từ Roboflow]**
 
-Nhóm sử dụng mô hình **YOLO11n** với tệp pretrained `yolo11n.pt`. *Pretrained* có nghĩa mô hình đã được huấn luyện trước trên dữ liệu khác để học các đặc trưng thị giác cơ bản, như cạnh, hình dạng và họa tiết. Ký tự **n** viết tắt của **nano**, tức biến thể gọn của họ YOLO11. YOLO là họ mô hình được thiết kế để thực hiện Object Detection nhanh trên ảnh.
+Tiếp theo, nhóm kết nối đến dự án **AI-Grading-IoT** trên Roboflow và tải **phiên bản dataset số 2**, được xuất theo định dạng YOLO tương thích với Ultralytics.
 
-Thay vì huấn luyện từ trọng số ngẫu nhiên, nhóm thực hiện **fine-tuning**, tức tiếp tục huấn luyện mô hình có sẵn trên ảnh linh kiện IoT. Đây là một hình thức **Transfer Learning**, nghĩa là chuyển kiến thức đã học từ bài toán trước sang bài toán mới. Trong quá trình này, mô hình học cách phân biệt 33 class của bộ kit, chẳng hạn LCD khác keypad như thế nào. Lựa chọn nano thuận lợi khi cần chạy trên phần cứng có tài nguyên hạn chế, nhưng **chưa thể kết luận đây là biến thể tối ưu nhất** nếu chưa so sánh thực nghiệm với các kích thước mô hình khác.
+Bộ dữ liệu được cấu hình với **33 lớp linh kiện**, bao gồm những thành phần như Arduino, STM32, LCD, keypad, cảm biến và các module truyền thông. Theo nhật ký huấn luyện, mô hình sử dụng **1.173 ảnh để train** và **112 ảnh để validation**; riêng tập validation có tổng cộng **841 đối tượng được gán nhãn**.
 
-**3. Cấu hình huấn luyện – định nghĩa từng tham số**
+Các ảnh đã được đánh dấu vị trí và loại linh kiện bằng bounding box. Nhờ vậy, mô hình có cơ sở để học cả việc phân biệt tên linh kiện lẫn xác định vị trí của chúng trên ảnh.
 
-Notebook huấn luyện bằng Ultralytics trên Kaggle, sử dụng GPU **NVIDIA Tesla T4**. **GPU**, viết tắt của *Graphics Processing Unit*, là bộ xử lý có khả năng thực hiện nhiều phép tính song song, giúp tăng tốc việc huấn luyện mạng nơ-ron. Thư viện **Ultralytics** là công cụ cung cấp mã nguồn và API để huấn luyện, đánh giá và chạy inference với YOLO.
+**[Cell 3 – Fine-tuning và cấu hình training]**
 
-Cấu hình gồm `epochs=50`, `imgsz=640`, `batch=16`, `device=0`. **Epoch** được định nghĩa là *một lượt mô hình đi qua toàn bộ tập train*; 50 epoch nghĩa là quá trình học diễn ra qua tập train 50 lượt, chứ không phải học 50 ảnh. **Batch** là một nhóm ảnh được xử lý cùng lúc để tính bước cập nhật mô hình; **batch size** là số ảnh của nhóm đó. Với batch size 16 và 1.173 ảnh, mỗi epoch có khoảng **74 batch**, đúng với log huấn luyện. **Image size**, hay `imgsz=640`, là kích thước đầu vào do pipeline xử lý ảnh của YOLO sử dụng, thường tương ứng 640 × 640 pixel sau tiền xử lý; nó không có nghĩa mọi ảnh gốc đều được chụp ở độ phân giải này. `device=0` chọn GPU đầu tiên trong môi trường Kaggle.
+Sau khi chuẩn bị xong dữ liệu, nhóm khởi tạo mô hình từ trọng số **`yolo11n.pt`**. Đây là phiên bản YOLO11 Nano đã được huấn luyện trước. Nhóm lựa chọn phiên bản nhỏ gọn này để thuận tiện cho thử nghiệm và triển khai trên phần cứng có tài nguyên hạn chế.
 
-Một thuật ngữ quan trọng nữa là **weight**, hay *trọng số mô hình*: các tham số số học mà mạng nơ-ron điều chỉnh trong quá trình học. Khi mô hình dự đoán sai, thuật toán **optimizer**, tức bộ tối ưu, dùng thông tin từ hàm mất mát và gradient để cập nhật trọng số. Trong log, bộ tối ưu được lựa chọn tự động là **AdamW**; vì vậy ta không nên nói nhóm tự tay chọn từng tham số tối ưu nếu notebook không thể hiện điều đó.
+Ở đây, chúng ta có thể thấy các thông số chính của lần huấn luyện: **50 epoch, ảnh đầu vào 640 × 640 pixel, batch size 16**, và sử dụng GPU đầu tiên của môi trường Kaggle, trong lần chạy này là **NVIDIA Tesla T4**. Bộ tối ưu được Ultralytics tự lựa chọn là **AdamW**.
 
-**4. Training Loss – ba đường biểu đồ phản ánh điều gì?**
+Với cấu hình đó, mô hình đi qua tập dữ liệu huấn luyện nhiều lượt và liên tục cập nhật trọng số, để dần nhận diện tốt hơn các đặc điểm thị giác của từng loại linh kiện.
 
-Trong bước training, mô hình xem ảnh có nhãn, dự đoán class và khung bao, sau đó so sánh với đáp án. Mức sai lệch được biểu diễn qua **loss**, hay *hàm mất mát*. Loss là giá trị mà thuật toán cố gắng giảm xuống trong quá trình học. Nó **không phải** phần trăm dự đoán sai và cũng **không phải** độ chính xác của mô hình.
+**[Cell 4 – Kiểm tra file `best.pt`]**
 
-Notebook vẽ ba đường trên tập train:
+Kết thúc quá trình training, Ultralytics lưu các checkpoint của mô hình. Notebook cho thấy tệp **`best.pt`** nằm tại `runs/detect/train/weights/`. Đây là checkpoint được lựa chọn theo kết quả validation và cũng là mô hình nhóm sử dụng cho bước nhận diện về sau.
 
-- **Box Loss** là *mức sai lệch khi xác định vị trí khung bao*. Ví dụ, mô hình phát hiện đúng Arduino nhưng vẽ khung bao lệch nhiều khỏi vị trí được gán nhãn, thì thành phần sai số định vị có thể lớn. Box Loss giảm cho thấy việc tối ưu vị trí bounding box đang tốt dần trên tập train.
-- **Classification Loss**, thường viết `cls_loss`, là *mức sai lệch khi dự đoán class*. Ví dụ, mô hình nhầm một module LCD thành một thiết bị khác sẽ bị phạt ở thành phần này. Khi Class Loss giảm, mô hình đang học cách phân biệt nhãn linh kiện tốt hơn trên dữ liệu huấn luyện.
-- **DFL Loss**, viết đầy đủ là *Distribution Focal Loss*, là thành phần loss hỗ trợ **hồi quy vị trí khung bao** bằng cách học phân phối cho các khoảng cách đến cạnh hộp. Nói đơn giản, DFL giúp tinh chỉnh cách mô hình xác định tọa độ của bounding box. DFL **không phải** điểm confidence hay một chỉ số phần trăm chính xác.
+**[Cell 5 và 6 – Xem biểu đồ Training và Validation]**
 
-Khi xem các biểu đồ theo **epoch**, trục ngang biểu diễn số lượt học; trục dọc là giá trị loss. Một xu hướng thường được mong đợi là các đường loss giảm rồi ổn định. Tuy nhiên, loss train giảm không chứng minh mô hình sẽ tốt trên những ảnh ngoài tập train. Đó là lý do phải quan sát validation.
+Tiếp đến, trong notebook, nhóm đọc file `results.csv` do quá trình training tạo ra và trực quan hóa các chỉ số theo từng epoch.
 
-**5. Validation Loss, IoU và các thước đo đánh giá**
+Trước hết là ba biểu đồ **Training Box Loss, Classification Loss và DFL Loss**. Nhìn vào các biểu đồ này, chúng ta có thể theo dõi quá trình mô hình giảm dần sai lệch khi xác định vị trí và phân loại linh kiện. Đây là tín hiệu cho thấy quá trình tối ưu đang có tiến triển, nhưng chỉ nhìn vào training loss thì chưa đủ để kết luận chất lượng trên dữ liệu chưa dùng để huấn luyện.
 
-**Validation** là quá trình đưa tập ảnh không dùng để cập nhật trọng số vào mô hình để đánh giá mức độ mô hình áp dụng kiến thức đã học. **Validation Loss** được tính trên tập này. Nếu Training Loss giảm nhưng Validation Loss tăng kéo dài, có thể xuất hiện **overfitting**, hay *quá khớp*: mô hình học rất sát ảnh train nhưng hoạt động kém hơn trên ảnh mới. Đây chỉ là một dấu hiệu cần xem xét cùng các chỉ số khác, không phải kết luận tự động.
+Vì vậy, notebook còn biểu diễn **mAP@50, mAP@50–95 và Validation Loss**. Các đường mAP tăng đáng kể ở giai đoạn đầu, sau đó dần ổn định; điều này cho thấy hiệu năng phát hiện trên tập validation đã cải thiện trong quá trình huấn luyện. Notebook cũng có phần hiển thị **confusion matrix** để hỗ trợ xem xét các trường hợp mô hình có thể nhầm lẫn giữa những loại linh kiện.
 
-Khi đo độ đúng của **bounding box**, công cụ sử dụng **IoU**, viết tắt của *Intersection over Union*, nghĩa là **tỷ lệ diện tích giao trên diện tích hợp** giữa khung dự đoán và khung thật. Ví dụ, nếu diện tích phần giao là 80 đơn vị và phần hợp là 100 đơn vị thì **IoU = 80 / 100 = 0,80**. IoU bằng 1 khi hai khung trùng khít và bằng 0 khi không chồng lấp. Ở ngưỡng **IoU 0,50**, một khung có IoU 0,80 đạt yêu cầu về độ chồng lấp; ở ngưỡng 0,90, chính khung đó không đạt. Đó là lý do một mô hình có thể có kết quả khác nhau khi thay tiêu chuẩn đánh giá vị trí.
+**[Chỉ vào bảng kết quả validation cuối quá trình huấn luyện]**
 
-Để tính kết quả detection, ta cần phân biệt ba loại kết quả: **True Positive – TP**, tức một phát hiện đúng class và đáp ứng quy tắc khớp đối tượng; **False Positive – FP**, tức phát hiện sai hoặc phát hiện thừa; và **False Negative – FN**, tức một đối tượng có thật nhưng bị bỏ sót. Ví dụ *minh họa*, ảnh có 10 linh kiện, mô hình nhận đúng 8, bỏ sót 2, đồng thời báo thêm 1 linh kiện không có thật, thì TP = 8, FN = 2 và FP = 1.
+Sau 50 epoch, mô hình được đánh giá trên tập **112 ảnh validation**. Kết quả của checkpoint được lựa chọn tốt nhất ghi nhận **Precision đạt 92,4%, Recall đạt 89,2%, mAP@50 đạt 89,7% và mAP@50–95 đạt 65,4%**.
 
-**6. Precision, Recall, AP và mAP – giải thích số liệu thật**
+Nhìn chung, các chỉ số này cho thấy mô hình đã học được khả năng phát hiện các linh kiện IoT trong tập validation. Tuy nhiên, hiệu năng giữa từng loại linh kiện vẫn có khác biệt: chẳng hạn **Arduino đạt mAP@50 là 0,995**, **LCD đạt 0,984**, trong khi **buzzer đạt 0,417**. Riêng `lora_module` chỉ có **một đối tượng trong tập validation**, nên kết quả của lớp này chưa đủ để đánh giá chắc chắn khả năng nhận diện trong thực tế.
 
-Từ TP, FP và FN, hai chỉ số cơ bản được định nghĩa như sau:
+Những khác biệt đó cho nhóm cơ sở để tiếp tục bổ sung hình ảnh cho các lớp khó, điều chỉnh dữ liệu và kiểm thử trên ảnh thực tế. Các chỉ số vừa nêu là **kết quả validation của mô hình nhận diện**, chưa phải độ chính xác chấm điểm của toàn bộ hệ thống AI-Grading-IoT.
 
-- **Precision**, hay *độ chính xác trong số các đối tượng mà mô hình đã phát hiện*, được tính bằng **TP / (TP + FP)**. Nó trả lời câu hỏi: “Trong các linh kiện mà mô hình báo có, bao nhiêu phát hiện là đúng?”. Với ví dụ TP = 8 và FP = 1, Precision = 8/9 ≈ 88,9%. Precision cao cho thấy ít nhận nhầm hoặc ít báo thừa.
-- **Recall**, hay *độ bao phủ những đối tượng thực sự tồn tại*, được tính bằng **TP / (TP + FN)**. Nó trả lời câu hỏi: “Trong các linh kiện thật sự xuất hiện, mô hình tìm được bao nhiêu?”. Với ví dụ TP = 8 và FN = 2, Recall = 8/10 = 80%. Recall cao cho thấy mô hình bỏ sót ít linh kiện hơn.
+**[Kết thúc giới thiệu notebook – chuyển sang Slide 14]**
 
-Hai chỉ số này có thể thay đổi khi điều chỉnh **confidence threshold**, tức mức điểm tự tin tối thiểu để giữ lại một dự đoán. Hạ ngưỡng có thể giúp phát hiện nhiều vật thể hơn nhưng cũng tăng báo nhầm; tăng ngưỡng có thể giảm báo nhầm nhưng tăng bỏ sót. Vì vậy, một chỉ số cao riêng lẻ chưa nói lên toàn bộ chất lượng detection.
-
-Để đánh giá tổng hợp, ta dùng **AP – Average Precision**, nghĩa là *diện tích dưới đường Precision–Recall* cho một class tại một mức IoU xác định. Đường Precision–Recall cho thấy sự đánh đổi giữa hai chỉ số khi thay ngưỡng confidence. **mAP – Mean Average Precision** là *trung bình AP của các class được đưa vào đánh giá*. Khác với Precision, mAP không phải tỉ lệ ảnh được dự đoán đúng mà là chỉ số tổng hợp chất lượng phát hiện đối tượng theo nhiều ngưỡng confidence.
-
-Hai giá trị thường xuất hiện trên slide có nghĩa là:
-
-- **mAP@50** là mAP tính ở mức **IoU = 0,50**. Tức là khi đánh giá việc khung dự đoán có khớp với vật thể thật hay không, ta dùng ngưỡng chồng lấp 50%.
-- **mAP@50–95** là trung bình của mAP tại **10 ngưỡng IoU: 0,50; 0,55; 0,60; ...; 0,95**. Chỉ số này khắt khe hơn về vị trí khung bao, nên thường thấp hơn mAP@50.
-
-Trong notebook, khi đánh giá lại file `best.pt` trên **112 ảnh validation chứa 841 đối tượng**, kết quả được ghi nhận là:
-
-| Chỉ số | Định nghĩa ngắn | Kết quả từ notebook |
-|---|---|---:|
-| Precision | Tỷ lệ phát hiện đúng trong số phát hiện được tính | **0,924 = 92,4%** |
-| Recall | Tỷ lệ đối tượng thật được tìm thấy | **0,892 = 89,2%** |
-| mAP@50 | Trung bình AP các class tại IoU 0,50 | **0,897 = 89,7%** |
-| mAP@50–95 | Trung bình mAP qua IoU 0,50 đến 0,95 | **0,654 = 65,4%** |
-
-Nói cách khác, kết quả cho thấy mô hình đạt chất lượng phát hiện tương đối tốt trên **tập validation được báo cáo**, nhưng khi tăng yêu cầu về mức chồng lấp khung bao thì hiệu năng tổng hợp thấp hơn. Đặc biệt, **mAP@50 = 89,7% không có nghĩa 89,7% hình ảnh được nhận diện hoàn toàn đúng, và càng không có nghĩa hệ thống chấm đúng 89,7% bài thực hành IoT**. Đây là một chỉ số đo chất lượng Object Detection, không phải điểm chấm bài của Vision Grader.
-
-**7. Đánh giá từng class và ý nghĩa với sản phẩm**
-
-Bên cạnh kết quả toàn bộ dataset, notebook cho thấy hiệu năng theo từng **class**. Chỉ số **per-class mAP@50** là AP ở IoU 0,50 của riêng class đó, từ đó cho thấy những linh kiện nào dễ hay khó nhận diện hơn. Chẳng hạn, Arduino đạt **0,995**, LCD đạt **0,984**, DHT sensor đạt **0,995**. Ngược lại, buzzer đạt **0,417**, `power_ack_led` đạt **0,637** và `power_vcc_led` đạt **0,627**. Đặc biệt, `lora_module` có **1 instance trong tập validation** và mAP@50 **0,124**; mẫu validation quá ít nên không thể kết luận chắc chắn mô hình sẽ hoạt động như thế nào với loại linh kiện này ở môi trường thực tế.
-
-Nhóm cũng có thể dùng **Confusion Matrix – ma trận nhầm lẫn**, là bảng đặt nhãn đúng cạnh nhãn mô hình dự đoán để xem cặp class nào dễ bị nhận nhầm. Đối với bộ kit IoT, những kết quả này giúp nhóm biết cần chụp thêm ảnh cho class nào, bổ sung góc nhìn hay kiểm tra lại annotation ở đâu.
-
-**8. Từ `best.pt` đến Slide 14 – nhận diện trên ảnh mới**
-
-Cuối cùng, trong quá trình training, hệ thống lưu **checkpoint**, tức bản lưu trạng thái trọng số tại một thời điểm. Tệp **`best.pt`** là checkpoint được lựa chọn tốt nhất theo tiêu chí validation của trình huấn luyện; **`last.pt`** thường là trọng số ở epoch cuối. Notebook có `runs/detect/train/weights/best.pt`, dung lượng khoảng **5,5 MB**, được dùng để đánh giá lại trên validation.
-
-Khi nạp `best.pt` để thực hiện **inference**, nghĩa là *cho mô hình đã huấn luyện dự đoán trên ảnh đầu vào mà không tiếp tục cập nhật trọng số*, mô hình sẽ trả về class, bounding box và **confidence score**. Confidence score là *điểm tự tin mô hình gán cho một dự đoán*, ví dụ `lcd: 0.91`; số này không nên hiểu máy móc là “91% xác suất thực tế chắc chắn đúng” nếu chưa kiểm định hiệu chỉnh xác suất. Từ các dự đoán này, phần Vision Grader có thể đối chiếu với các linh kiện bắt buộc của Practice và Vision Rubric, nhưng YOLO11 **không tự kiểm chứng được mạch đấu dây đúng, cảm biến hoạt động đúng hay toàn bộ bài thực hành đạt yêu cầu**.
-
-Như vậy, nhóm đã đi qua chuỗi xử lý: **dataset có annotation → YOLO11n pretrained → fine-tuning 50 epoch → theo dõi Training Loss và Validation Metrics → chọn `best.pt` → inference**. Điểm cần nhớ là **các con số vừa trình bày là kết quả validation của notebook, chưa phải kết quả kiểm thử độc lập trên mọi môi trường và chưa phải độ chính xác của hệ thống chấm bài**.
-
-**Tiếp theo, ở Slide 14, em xin minh họa ảnh đầu vào và kết quả phát hiện đối tượng để thấy cụ thể bounding box, class và confidence score được hiển thị như thế nào.**
+Như vậy, từ bộ dữ liệu ảnh linh kiện ban đầu, nhóm đã đi đến một mô hình YOLO11 có thể sử dụng để đưa ra dự đoán trên hình ảnh mới. **Tiếp theo, ở Slide 14, em xin trình bày trực quan ảnh đầu vào và kết quả nhận diện, để thấy rõ mô hình tạo ra tên linh kiện, vị trí bounding box và confidence score như thế nào.**
 
 ### Slide 14. Kết quả thử nghiệm YOLO11
 
@@ -557,8 +520,9 @@ Em rất mong nhận được những câu hỏi và góp ý để tiếp tục 
 
 ---
 
+## PHỤ LỤC. KIẾN THỨC VÀ THUẬT NGỮ DÀNH CHO HỎI ĐÁP
 
----
+*Chỉ sử dụng khi chuẩn bị trả lời câu hỏi hoặc khi hội đồng yêu cầu giải thích sâu. Nội dung này không thuộc lời nói chính giữa Slide 13 và Slide 14.*
 
 ## PHỤ LỤC. ĐỊNH NGHĨA CHI TIẾT CÁC THUẬT NGỮ VÀ CHỈ SỐ YOLO11
 
@@ -897,3 +861,97 @@ Không. Muốn khẳng định khả năng tổng quát hóa, cần đánh giá 
 **10. Confidence 0,95 nghĩa là xác suất đúng chắc chắn 95% phải không?**
 
 Không nhất thiết. Nó là điểm tự tin do mô hình tạo ra. Chỉ khi được kiểm tra hiệu chỉnh xác suất phù hợp mới có thể diễn giải gần với xác suất thực tế.
+
+
+---
+
+## VII. Phân tích chuyên sâu quy trình fine-tuning và kết quả notebook (dùng khi hỏi đáp)
+
+*Tài liệu tra cứu chuyên sâu cho phần hỏi đáp; số liệu lấy từ notebook, các phép tính ví dụ chỉ có tính minh họa.*
+
+**1. Mục tiêu của bài toán và dữ liệu đầu vào**
+
+Trước khi xem kết quả, em xin giải thích cụ thể mô hình YOLO11 đã được huấn luyện như thế nào và các chỉ số ở biểu đồ có ý nghĩa gì.
+
+Bài toán nhóm giải quyết là **Object Detection**, hay *phát hiện đối tượng trong ảnh*. Một mô hình Object Detection không chỉ dự đoán tên linh kiện mà còn tìm vị trí linh kiện đó. Chẳng hạn, với một ảnh có Arduino, LCD và cảm biến nhiệt độ, đầu ra mong muốn là ba **class**, tức *nhãn loại linh kiện*, cùng ba **bounding box**, tức *khung chữ nhật bao quanh vùng chứa linh kiện*. Vị trí này được biểu diễn bằng tọa độ để máy tính có thể vẽ và xử lý tiếp.
+
+Để dạy mô hình, nhóm dùng **dataset**, nghĩa là tập dữ liệu phục vụ huấn luyện, gồm ảnh và **annotation**. Annotation là thông tin do người gán nhãn cung cấp, cho biết một linh kiện thuộc class nào và khung bao của nó nằm ở đâu. Trong notebook, dataset được lấy từ Roboflow, phiên bản 2 của dự án AI-Grading-IoT, ở định dạng `yolov8` tương thích với thư viện Ultralytics và có **33 class**. Số class là số *loại linh kiện cần phân biệt*, không phải số linh kiện xuất hiện trong một ảnh.
+
+Dữ liệu được chia thành **tập train**, tức nhóm ảnh mô hình dùng để học và cập nhật tham số, và **tập validation**, tức nhóm ảnh tách ra để kiểm tra chất lượng trong quá trình huấn luyện. Nhật ký ghi **1.173 ảnh train** và **112 ảnh validation với 841 instance**. *Instance* là một đối tượng được gán nhãn cụ thể; ví dụ, một ảnh có 1 Arduino và 2 nút bấm thì có 3 instance. Vì thế, 112 ảnh có thể chứa 841 đối tượng. Notebook chưa trình bày kết quả đánh giá trên một **tập test độc lập**, tức tập chỉ dùng để kiểm tra cuối cùng, không dùng trong lựa chọn mô hình.
+
+**2. Vì sao dùng YOLO11n và fine-tuning?**
+
+Nhóm sử dụng mô hình **YOLO11n** với tệp pretrained `yolo11n.pt`. *Pretrained* có nghĩa mô hình đã được huấn luyện trước trên dữ liệu khác để học các đặc trưng thị giác cơ bản, như cạnh, hình dạng và họa tiết. Ký tự **n** viết tắt của **nano**, tức biến thể gọn của họ YOLO11. YOLO là họ mô hình được thiết kế để thực hiện Object Detection nhanh trên ảnh.
+
+Thay vì huấn luyện từ trọng số ngẫu nhiên, nhóm thực hiện **fine-tuning**, tức tiếp tục huấn luyện mô hình có sẵn trên ảnh linh kiện IoT. Đây là một hình thức **Transfer Learning**, nghĩa là chuyển kiến thức đã học từ bài toán trước sang bài toán mới. Trong quá trình này, mô hình học cách phân biệt 33 class của bộ kit, chẳng hạn LCD khác keypad như thế nào. Lựa chọn nano thuận lợi khi cần chạy trên phần cứng có tài nguyên hạn chế, nhưng **chưa thể kết luận đây là biến thể tối ưu nhất** nếu chưa so sánh thực nghiệm với các kích thước mô hình khác.
+
+**3. Cấu hình huấn luyện – định nghĩa từng tham số**
+
+Notebook huấn luyện bằng Ultralytics trên Kaggle, sử dụng GPU **NVIDIA Tesla T4**. **GPU**, viết tắt của *Graphics Processing Unit*, là bộ xử lý có khả năng thực hiện nhiều phép tính song song, giúp tăng tốc việc huấn luyện mạng nơ-ron. Thư viện **Ultralytics** là công cụ cung cấp mã nguồn và API để huấn luyện, đánh giá và chạy inference với YOLO.
+
+Cấu hình gồm `epochs=50`, `imgsz=640`, `batch=16`, `device=0`. **Epoch** được định nghĩa là *một lượt mô hình đi qua toàn bộ tập train*; 50 epoch nghĩa là quá trình học diễn ra qua tập train 50 lượt, chứ không phải học 50 ảnh. **Batch** là một nhóm ảnh được xử lý cùng lúc để tính bước cập nhật mô hình; **batch size** là số ảnh của nhóm đó. Với batch size 16 và 1.173 ảnh, mỗi epoch có khoảng **74 batch**, đúng với log huấn luyện. **Image size**, hay `imgsz=640`, là kích thước đầu vào do pipeline xử lý ảnh của YOLO sử dụng, thường tương ứng 640 × 640 pixel sau tiền xử lý; nó không có nghĩa mọi ảnh gốc đều được chụp ở độ phân giải này. `device=0` chọn GPU đầu tiên trong môi trường Kaggle.
+
+Một thuật ngữ quan trọng nữa là **weight**, hay *trọng số mô hình*: các tham số số học mà mạng nơ-ron điều chỉnh trong quá trình học. Khi mô hình dự đoán sai, thuật toán **optimizer**, tức bộ tối ưu, dùng thông tin từ hàm mất mát và gradient để cập nhật trọng số. Trong log, bộ tối ưu được lựa chọn tự động là **AdamW**; vì vậy ta không nên nói nhóm tự tay chọn từng tham số tối ưu nếu notebook không thể hiện điều đó.
+
+**4. Training Loss – ba đường biểu đồ phản ánh điều gì?**
+
+Trong bước training, mô hình xem ảnh có nhãn, dự đoán class và khung bao, sau đó so sánh với đáp án. Mức sai lệch được biểu diễn qua **loss**, hay *hàm mất mát*. Loss là giá trị mà thuật toán cố gắng giảm xuống trong quá trình học. Nó **không phải** phần trăm dự đoán sai và cũng **không phải** độ chính xác của mô hình.
+
+Notebook vẽ ba đường trên tập train:
+
+- **Box Loss** là *mức sai lệch khi xác định vị trí khung bao*. Ví dụ, mô hình phát hiện đúng Arduino nhưng vẽ khung bao lệch nhiều khỏi vị trí được gán nhãn, thì thành phần sai số định vị có thể lớn. Box Loss giảm cho thấy việc tối ưu vị trí bounding box đang tốt dần trên tập train.
+- **Classification Loss**, thường viết `cls_loss`, là *mức sai lệch khi dự đoán class*. Ví dụ, mô hình nhầm một module LCD thành một thiết bị khác sẽ bị phạt ở thành phần này. Khi Class Loss giảm, mô hình đang học cách phân biệt nhãn linh kiện tốt hơn trên dữ liệu huấn luyện.
+- **DFL Loss**, viết đầy đủ là *Distribution Focal Loss*, là thành phần loss hỗ trợ **hồi quy vị trí khung bao** bằng cách học phân phối cho các khoảng cách đến cạnh hộp. Nói đơn giản, DFL giúp tinh chỉnh cách mô hình xác định tọa độ của bounding box. DFL **không phải** điểm confidence hay một chỉ số phần trăm chính xác.
+
+Khi xem các biểu đồ theo **epoch**, trục ngang biểu diễn số lượt học; trục dọc là giá trị loss. Một xu hướng thường được mong đợi là các đường loss giảm rồi ổn định. Tuy nhiên, loss train giảm không chứng minh mô hình sẽ tốt trên những ảnh ngoài tập train. Đó là lý do phải quan sát validation.
+
+**5. Validation Loss, IoU và các thước đo đánh giá**
+
+**Validation** là quá trình đưa tập ảnh không dùng để cập nhật trọng số vào mô hình để đánh giá mức độ mô hình áp dụng kiến thức đã học. **Validation Loss** được tính trên tập này. Nếu Training Loss giảm nhưng Validation Loss tăng kéo dài, có thể xuất hiện **overfitting**, hay *quá khớp*: mô hình học rất sát ảnh train nhưng hoạt động kém hơn trên ảnh mới. Đây chỉ là một dấu hiệu cần xem xét cùng các chỉ số khác, không phải kết luận tự động.
+
+Khi đo độ đúng của **bounding box**, công cụ sử dụng **IoU**, viết tắt của *Intersection over Union*, nghĩa là **tỷ lệ diện tích giao trên diện tích hợp** giữa khung dự đoán và khung thật. Ví dụ, nếu diện tích phần giao là 80 đơn vị và phần hợp là 100 đơn vị thì **IoU = 80 / 100 = 0,80**. IoU bằng 1 khi hai khung trùng khít và bằng 0 khi không chồng lấp. Ở ngưỡng **IoU 0,50**, một khung có IoU 0,80 đạt yêu cầu về độ chồng lấp; ở ngưỡng 0,90, chính khung đó không đạt. Đó là lý do một mô hình có thể có kết quả khác nhau khi thay tiêu chuẩn đánh giá vị trí.
+
+Để tính kết quả detection, ta cần phân biệt ba loại kết quả: **True Positive – TP**, tức một phát hiện đúng class và đáp ứng quy tắc khớp đối tượng; **False Positive – FP**, tức phát hiện sai hoặc phát hiện thừa; và **False Negative – FN**, tức một đối tượng có thật nhưng bị bỏ sót. Ví dụ *minh họa*, ảnh có 10 linh kiện, mô hình nhận đúng 8, bỏ sót 2, đồng thời báo thêm 1 linh kiện không có thật, thì TP = 8, FN = 2 và FP = 1.
+
+**6. Precision, Recall, AP và mAP – giải thích số liệu thật**
+
+Từ TP, FP và FN, hai chỉ số cơ bản được định nghĩa như sau:
+
+- **Precision**, hay *độ chính xác trong số các đối tượng mà mô hình đã phát hiện*, được tính bằng **TP / (TP + FP)**. Nó trả lời câu hỏi: “Trong các linh kiện mà mô hình báo có, bao nhiêu phát hiện là đúng?”. Với ví dụ TP = 8 và FP = 1, Precision = 8/9 ≈ 88,9%. Precision cao cho thấy ít nhận nhầm hoặc ít báo thừa.
+- **Recall**, hay *độ bao phủ những đối tượng thực sự tồn tại*, được tính bằng **TP / (TP + FN)**. Nó trả lời câu hỏi: “Trong các linh kiện thật sự xuất hiện, mô hình tìm được bao nhiêu?”. Với ví dụ TP = 8 và FN = 2, Recall = 8/10 = 80%. Recall cao cho thấy mô hình bỏ sót ít linh kiện hơn.
+
+Hai chỉ số này có thể thay đổi khi điều chỉnh **confidence threshold**, tức mức điểm tự tin tối thiểu để giữ lại một dự đoán. Hạ ngưỡng có thể giúp phát hiện nhiều vật thể hơn nhưng cũng tăng báo nhầm; tăng ngưỡng có thể giảm báo nhầm nhưng tăng bỏ sót. Vì vậy, một chỉ số cao riêng lẻ chưa nói lên toàn bộ chất lượng detection.
+
+Để đánh giá tổng hợp, ta dùng **AP – Average Precision**, nghĩa là *diện tích dưới đường Precision–Recall* cho một class tại một mức IoU xác định. Đường Precision–Recall cho thấy sự đánh đổi giữa hai chỉ số khi thay ngưỡng confidence. **mAP – Mean Average Precision** là *trung bình AP của các class được đưa vào đánh giá*. Khác với Precision, mAP không phải tỉ lệ ảnh được dự đoán đúng mà là chỉ số tổng hợp chất lượng phát hiện đối tượng theo nhiều ngưỡng confidence.
+
+Hai giá trị thường xuất hiện trên slide có nghĩa là:
+
+- **mAP@50** là mAP tính ở mức **IoU = 0,50**. Tức là khi đánh giá việc khung dự đoán có khớp với vật thể thật hay không, ta dùng ngưỡng chồng lấp 50%.
+- **mAP@50–95** là trung bình của mAP tại **10 ngưỡng IoU: 0,50; 0,55; 0,60; ...; 0,95**. Chỉ số này khắt khe hơn về vị trí khung bao, nên thường thấp hơn mAP@50.
+
+Trong notebook, khi đánh giá lại file `best.pt` trên **112 ảnh validation chứa 841 đối tượng**, kết quả được ghi nhận là:
+
+| Chỉ số | Định nghĩa ngắn | Kết quả từ notebook |
+|---|---|---:|
+| Precision | Tỷ lệ phát hiện đúng trong số phát hiện được tính | **0,924 = 92,4%** |
+| Recall | Tỷ lệ đối tượng thật được tìm thấy | **0,892 = 89,2%** |
+| mAP@50 | Trung bình AP các class tại IoU 0,50 | **0,897 = 89,7%** |
+| mAP@50–95 | Trung bình mAP qua IoU 0,50 đến 0,95 | **0,654 = 65,4%** |
+
+Nói cách khác, kết quả cho thấy mô hình đạt chất lượng phát hiện tương đối tốt trên **tập validation được báo cáo**, nhưng khi tăng yêu cầu về mức chồng lấp khung bao thì hiệu năng tổng hợp thấp hơn. Đặc biệt, **mAP@50 = 89,7% không có nghĩa 89,7% hình ảnh được nhận diện hoàn toàn đúng, và càng không có nghĩa hệ thống chấm đúng 89,7% bài thực hành IoT**. Đây là một chỉ số đo chất lượng Object Detection, không phải điểm chấm bài của Vision Grader.
+
+**7. Đánh giá từng class và ý nghĩa với sản phẩm**
+
+Bên cạnh kết quả toàn bộ dataset, notebook cho thấy hiệu năng theo từng **class**. Chỉ số **per-class mAP@50** là AP ở IoU 0,50 của riêng class đó, từ đó cho thấy những linh kiện nào dễ hay khó nhận diện hơn. Chẳng hạn, Arduino đạt **0,995**, LCD đạt **0,984**, DHT sensor đạt **0,995**. Ngược lại, buzzer đạt **0,417**, `power_ack_led` đạt **0,637** và `power_vcc_led` đạt **0,627**. Đặc biệt, `lora_module` có **1 instance trong tập validation** và mAP@50 **0,124**; mẫu validation quá ít nên không thể kết luận chắc chắn mô hình sẽ hoạt động như thế nào với loại linh kiện này ở môi trường thực tế.
+
+Nhóm cũng có thể dùng **Confusion Matrix – ma trận nhầm lẫn**, là bảng đặt nhãn đúng cạnh nhãn mô hình dự đoán để xem cặp class nào dễ bị nhận nhầm. Đối với bộ kit IoT, những kết quả này giúp nhóm biết cần chụp thêm ảnh cho class nào, bổ sung góc nhìn hay kiểm tra lại annotation ở đâu.
+
+**8. Từ `best.pt` đến Slide 14 – nhận diện trên ảnh mới**
+
+Cuối cùng, trong quá trình training, hệ thống lưu **checkpoint**, tức bản lưu trạng thái trọng số tại một thời điểm. Tệp **`best.pt`** là checkpoint được lựa chọn tốt nhất theo tiêu chí validation của trình huấn luyện; **`last.pt`** thường là trọng số ở epoch cuối. Notebook có `runs/detect/train/weights/best.pt`, dung lượng khoảng **5,5 MB**, được dùng để đánh giá lại trên validation.
+
+Khi nạp `best.pt` để thực hiện **inference**, nghĩa là *cho mô hình đã huấn luyện dự đoán trên ảnh đầu vào mà không tiếp tục cập nhật trọng số*, mô hình sẽ trả về class, bounding box và **confidence score**. Confidence score là *điểm tự tin mô hình gán cho một dự đoán*, ví dụ `lcd: 0.91`; số này không nên hiểu máy móc là “91% xác suất thực tế chắc chắn đúng” nếu chưa kiểm định hiệu chỉnh xác suất. Từ các dự đoán này, phần Vision Grader có thể đối chiếu với các linh kiện bắt buộc của Practice và Vision Rubric, nhưng YOLO11 **không tự kiểm chứng được mạch đấu dây đúng, cảm biến hoạt động đúng hay toàn bộ bài thực hành đạt yêu cầu**.
+
+Như vậy, nhóm đã đi qua chuỗi xử lý: **dataset có annotation → YOLO11n pretrained → fine-tuning 50 epoch → theo dõi Training Loss và Validation Metrics → chọn `best.pt` → inference**. Điểm cần nhớ là **các con số vừa trình bày là kết quả validation của notebook, chưa phải kết quả kiểm thử độc lập trên mọi môi trường và chưa phải độ chính xác của hệ thống chấm bài**.
+
+**Tiếp theo, ở Slide 14, em xin minh họa ảnh đầu vào và kết quả phát hiện đối tượng để thấy cụ thể bounding box, class và confidence score được hiển thị như thế nào.**
