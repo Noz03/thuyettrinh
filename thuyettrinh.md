@@ -294,6 +294,10 @@ Kết quả đầu ra bao gồm tên class, tọa độ bounding box và confide
 
 Đây chính là thành phần AI nhận diện linh kiện mà nhóm dự kiến tích hợp trực tiếp vào hệ thống Vision Grading.
 
+**Bổ sung – Quy trình huấn luyện và đánh giá thực tế theo notebook:**
+
+Để làm rõ hơn quá trình fine-tuning vừa trình bày, nhóm đã thực hiện huấn luyện trên môi trường Kaggle với GPU Tesla T4. Bộ dữ liệu được tải từ Roboflow, phiên bản 2 của dự án AI-Grading-IoT, và được cấu hình theo định dạng YOLO với 33 lớp linh kiện. Theo nhật ký huấn luyện, mô hình sử dụng 1.173 ảnh train và 112 ảnh validation, trong đó tập validation có 841 đối tượng được gán nhãn. Nhóm lựa chọn mô hình pretrained `yolo11n.pt` và fine-tune trong 50 epoch, với kích thước ảnh 640 × 640 và batch size 16. Trong quá trình này, nhóm theo dõi ba thành phần Training Loss gồm Box Loss, Classification Loss và DFL Loss; đồng thời quan sát các biểu đồ mAP@50, mAP@50–95, Validation Loss và ma trận nhầm lẫn để đánh giá khả năng nhận diện. Sau khi hoàn tất huấn luyện, mô hình `best.pt` được đánh giá lại trên tập validation, đạt Precision 0,924, Recall 0,892, mAP@50 là 0,897 và mAP@50–95 là 0,654. Kết quả cho thấy mô hình đã học được đặc trưng của nhiều linh kiện như Arduino, LCD và cảm biến, nhưng vẫn còn những lớp nhận diện chưa tốt như buzzer và một số đèn trạng thái nguồn. Trọng số tốt nhất được lưu tại `runs/detect/train/weights/best.pt` và là cơ sở cho phần thử nghiệm nhận diện linh kiện ở slide tiếp theo.
+
 ### Slide 14. Kết quả thử nghiệm YOLO11
 
 
